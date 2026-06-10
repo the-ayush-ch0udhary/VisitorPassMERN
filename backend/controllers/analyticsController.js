@@ -10,7 +10,7 @@ exports.getStats = async (req, res) => {
     let passFilter = {};
     let logFilter = {};
 
-    // Apply organization filtering for multi-tenancy (unless System Admin)
+    // Apply organization filtering for multi-tenancy
     if (orgId) {
       visitorFilter.organizationId = orgId;
 

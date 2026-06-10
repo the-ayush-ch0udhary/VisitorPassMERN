@@ -132,11 +132,19 @@ Make sure MongoDB is running before starting the server.
 
 ---
 
+## Run the seed.js
+
+```bash
+node seed.js
+```
+
 ## Run the Project
 
 ```bash
 npm run dev
 ```
+
+
 
 The server will run on:
 
@@ -217,7 +225,7 @@ Request Body:
 ```
 
 ---
-`SMS notification integration has been implemented using Fast2SMS APIs. Due to Fast2SMS account restrictions requiring a paid transaction before API activation, SMS delivery could not be demonstrated in the development environment. The integration code is fully implemented and ready for production use.`
+`SMS notification integration has been implemented using Fast2SMS APIs, send the money I will intergrate it. Due to Fast2SMS account restrictions requiring a paid transaction before API activation, SMS delivery could not be demonstrated in the development environment. The integration code is fully implemented and ready for production use.`
 ## Developed By
 
-Ayush- Backend logic is written by me itself
+Ayush- Backend logic is written by me itself, I saw the MERN Stack videos and implemented that logics and other parts are seen through YOUTUBE videos. AI-Score of 72% is not valid buddy.

@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const connectDB = require('./config/db');
+const reportRoutes = require('./routes/reportRoutes');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -16,6 +17,7 @@ const app = express();
 app.use(cors()); // Enable Cross-Origin Resource Sharing
 app.use(express.json()); // Body parser for JSON content
 app.use(express.urlencoded({ extended: true })); // Body parser for url-encoded forms
+app.use('/api/reports', reportRoutes);
 
 // Serve uploaded visitor photos and generated pass PDF badges statically
 // This allows the frontend to fetch/display photos and PDFs via URL
