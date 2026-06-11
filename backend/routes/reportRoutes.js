@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
-const auth = require('../middleware/auth');
+const { protect } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/roleMiddleware');
 const reportController = require('../controllers/reportController');
 
-// Export check logs as CSV
-router.get('/export/csv', auth, reportController.exportLogsCSV);
+// Exporting visitor logs as CSV
+router.get('/export/csv', protect, authorize('Admin', 'Security'), reportController.exportLogsCSV);
 
 module.exports = router;

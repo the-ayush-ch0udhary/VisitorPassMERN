@@ -6,7 +6,7 @@ const fs = require('fs');
 const createTransporter = () => {
   return nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.mailtrap.io',
-    port: parseInt(process.env.EMAIL_PORT || '587'),
+    port: parseInt(process.env.EMAIL_PORT || 587),
     auth: {
       user: process.env.EMAIL_USER || 'your_smtp_user',
       pass: process.env.EMAIL_PASS || 'your_smtp_password'
@@ -39,6 +39,7 @@ exports.sendOTPEmail = async (email, otp) => {
     console.log(`[Email Service] OTP successfully sent to ${email}`);
   } catch (error) {
     console.error(`[Email Service Error] Failed to send OTP to ${email}: ${error.message}`);
+    throw error;
   }
 };
 

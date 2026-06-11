@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import API_URL from "../config/api";
 import { Html5QrcodeScanner } from "html5-qrcode";
 
 const SecurityDashboard = () => {
@@ -17,9 +18,7 @@ const SecurityDashboard = () => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
       const headers = { Authorization: `Bearer ${user.token}` };
-      const res = await axios.get("http://localhost:5000/api/check-logs", {
-        headers,
-      });
+      const res = await axios.get(`${API_URL}/check-logs`, { headers });
       setLogs(res.data);
     } catch (err) {
       setError("Failed to fetch check logs.");
@@ -88,10 +87,14 @@ const SecurityDashboard = () => {
     }
 
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
-      const headers = { Authorization: `Bearer ${user.token}` };
-      const endpoint = `http://localhost:5000/api/check-logs/${action}`;
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
 
+      if (!user.token) {
+        setError("Please login again.");
+        return;
+      }
+      const headers = { Authorization: `Bearer ${user.token}` };
+      const endpoint = `${API_URL}/check-logs/${action}`;
       const res = await axios.post(
         endpoint,
         { passId: passIdInput.trim() },
@@ -100,7 +103,7 @@ const SecurityDashboard = () => {
 
       setActionMessage(res.data.message);
       setPassIdInput("");
-      fetchLogs(); // refresh log table
+      await fetchLogs(); // refreshs log table
     } catch (err) {
       setActionError(err.response?.data?.message || "Transaction failed.");
     }

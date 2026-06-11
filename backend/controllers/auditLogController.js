@@ -1,6 +1,6 @@
 const AuditLog = require('../models/AuditLog');
 
-// Retrieve all system audit trails (restricted to Admins)
+// Retrieving all system audit trails
 exports.getAuditLogs = async (req, res) => {
   try {
     const logs = await AuditLog.find({})

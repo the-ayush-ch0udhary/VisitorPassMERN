@@ -1,6 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { checkIn, checkOut, getCheckLogs } = require('../controllers/checkLogController');
+
+const {
+    checkIn,
+    checkOut,
+    getCheckLogs
+} = require('../controllers/checkLogController');
+
 const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
@@ -8,10 +14,23 @@ const { authorize } = require('../middleware/roleMiddleware');
 router.use(protect);
 
 // Security actions
-router.post('/check-in', authorize('Admin', 'Security'), checkIn);
-router.post('/check-out', authorize('Admin', 'Security'), checkOut);
+router.post(
+    '/check-in',
+    authorize('Admin', 'Security'),
+    checkIn
+);
 
-// View logs action (accessible to Admins, Security, and Hosts)
-router.get('/', authorize('Admin', 'Security', 'Host'), getCheckLogs);
+router.post(
+    '/check-out',
+    authorize('Admin', 'Security'),
+    checkOut
+);
+
+// View logs action
+router.get(
+    '/',
+    authorize('Admin', 'Security', 'Host'),
+    getCheckLogs
+);
 
 module.exports = router;

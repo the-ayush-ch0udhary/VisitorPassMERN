@@ -1,14 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getMe, getHosts } = require('../controllers/authController');
+
+const {
+    register,
+    login,
+    getMe,
+    getHosts
+} = require('../controllers/authController');
+
 const { protect } = require('../middleware/authMiddleware');
 
-// Public endpoints
+// Public routes
 router.post('/register', register);
 router.post('/login', login);
 
-// Protected endpoints (requires valid JWT token)
+// Protected routes
 router.get('/me', protect, getMe);
-router.get('/hosts', getHosts); // Public or protected; keep public for visitor booking dropdown
+
+// Used for appointment booking host dropdown
+router.get('/hosts', protect, getHosts);
 
 module.exports = router;

@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
+
 const { createOrg, getOrgs } = require('../controllers/orgController');
 
-// Routes for organization setup and fetching
-router.post('/', createOrg);
-router.get('/', getOrgs);
+const { protect } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/roleMiddleware');
 
+// Organization management routes
+router.get('/', getOrgs );
+
+router.post('/', createOrg);
 module.exports = router;

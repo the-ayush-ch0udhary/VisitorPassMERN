@@ -2,7 +2,7 @@ const Visitor = require('../models/Visitor');
 const Pass = require('../models/Pass');
 const CheckLog = require('../models/CheckLog');
 
-// Retrieve core KPI metrics for the Admin dashboard
+
 exports.getStats = async (req, res) => {
   try {
     const orgId = req.user.organizationId;
@@ -10,11 +10,11 @@ exports.getStats = async (req, res) => {
     let passFilter = {};
     let logFilter = {};
 
-    // Apply organization filtering for multi-tenancy
+    
     if (orgId) {
       visitorFilter.organizationId = orgId;
 
-      // Fetch all visitor IDs belonging to this organization
+      
       const orgVisitors = await Visitor.find({ organizationId: orgId }).select('_id');
       const orgVisitorIds = orgVisitors.map(v => v._id);
 
@@ -28,7 +28,7 @@ exports.getStats = async (req, res) => {
     // 2. Total Passes
     const totalPasses = await Pass.countDocuments(passFilter);
 
-    // 3. Active Visitors (Currently Checked-In but not Checked-Out)
+    // 3. Active Visitors (
     const activeVisitors = await CheckLog.countDocuments({
       ...logFilter,
       checkInTime: { $ne: null },
@@ -66,7 +66,7 @@ exports.getStats = async (req, res) => {
   }
 };
 
-// Retrieve visitor traffic trend analytics (last 7 days check-in counts)
+
 exports.getTrends = async (req, res) => {
   try {
     const orgId = req.user.organizationId;
@@ -78,7 +78,7 @@ exports.getTrends = async (req, res) => {
       logFilter.visitorId = { $in: orgVisitorIds };
     }
 
-    // Generate labels and filters for the last 7 days
+    
     const trends = [];
     for (let i = 6; i >= 0; i--) {
       const day = new Date();

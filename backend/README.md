@@ -225,7 +225,8 @@ Request Body:
 ```
 
 ---
-`SMS notification integration has been implemented using Fast2SMS APIs, send the money I will intergrate it. Due to Fast2SMS account restrictions requiring a paid transaction before API activation, SMS delivery could not be demonstrated in the development environment. The integration code is fully implemented and ready for production use.`
+`SMS notification integration has been implemented using Twilio Trial Account`
+
 ## Developed By
 
-Ayush- Backend logic is written by me itself, I saw the MERN Stack videos and implemented that logics and other parts are seen through YOUTUBE videos. AI-Score of 72% is not valid buddy.
+Ayush- Backend logic is written by me itself, I saw the MERN Stack videos and implemented that logics and other parts are seen through YOUTUBE videos. 

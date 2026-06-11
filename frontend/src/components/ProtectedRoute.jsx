@@ -1,28 +1,30 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React from "react";
+import { Navigate } from "react-router-dom";
 
-// ProtectedRoute checks if user is logged in and verifies if their role matches requirements
+// Protect routes based on login status and role
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  // Fetch user object from localStorage
-  const userStr = localStorage.getItem('user');
+  const userStr = localStorage.getItem("user");
+
   let user = null;
+
   try {
     user = userStr ? JSON.parse(userStr) : null;
-  } catch (err) {
-    console.error('Failed to parse user session:', err);
+  } catch (error) {
+    console.error("Invalid user data in localStorage");
+    localStorage.removeItem("user");
   }
 
-  // If user session is not found, redirect to Login page
+  // User not logged in
   if (!user || !user.token) {
     return <Navigate to="/login" replace />;
   }
 
-  // If specific roles are required and user doesn't have permissions, redirect to Home page
+  // User logged in but role not allowed
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to="/" replace />;
   }
 
-  // If authorized, render children components
+  // Authorized user
   return children;
 };
 

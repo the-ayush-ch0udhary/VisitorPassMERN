@@ -1,33 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import API_URL from "../config/api";
 
 const Visitors = () => {
   const [visitors, setVisitors] = useState([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Form states for Add/Edit Visitor Modal
   const [showForm, setShowForm] = useState(false);
   const [editingVisitor, setEditingVisitor] = useState(null);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
   const [photoFile, setPhotoFile] = useState(null);
 
   const fetchVisitors = async () => {
     try {
-      const user = JSON.parse(localStorage.getItem('user'));
+      const user = JSON.parse(localStorage.getItem("user"));
       const headers = { Authorization: `Bearer ${user.token}` };
       const endpoint = search
-        ? `http://localhost:5000/api/visitors?search=${encodeURIComponent(search)}`
-        : 'http://localhost:5000/api/visitors';
+        ? `${API_URL}/visitors?search=${encodeURIComponent(search)}`
+        : `${API_URL}/visitors`;
 
       const res = await axios.get(endpoint, { headers });
       setVisitors(res.data);
     } catch (err) {
-      setError('Failed to fetch visitor profiles.');
+      setError("Failed to fetch visitor profiles.");
     } finally {
       setLoading(false);
     }
@@ -49,10 +50,10 @@ const Visitors = () => {
 
   const handleCreateClick = () => {
     setEditingVisitor(null);
-    setName('');
-    setPhone('');
-    setEmail('');
-    setAddress('');
+    setName("");
+    setPhone("");
+    setEmail("");
+    setAddress("");
     setPhotoFile(null);
     setShowForm(true);
   };
@@ -60,57 +61,88 @@ const Visitors = () => {
   const handleSaveVisitor = async (e) => {
     e.preventDefault();
     try {
-      const user = JSON.parse(localStorage.getItem('user'));
+      const user = JSON.parse(localStorage.getItem("user"));
       const headers = {
         Authorization: `Bearer ${user.token}`,
-        'Content-Type': 'multipart/form-data'
+        "Content-Type": "multipart/form-data",
       };
 
       const formData = new FormData();
-      formData.append('name', name);
-      formData.append('phone', phone);
-      formData.append('email', email);
-      formData.append('address', address);
+      formData.append("name", name);
+      formData.append("phone", phone);
+      formData.append("email", email);
+      formData.append("address", address);
       if (photoFile) {
-        formData.append('photo', photoFile);
+        formData.append("photo", photoFile);
       }
 
       if (editingVisitor) {
-        await axios.put(`http://localhost:5000/api/visitors/${editingVisitor._id}`, formData, { headers });
+        await axios.put(`${API_URL}/visitors/${editingVisitor._id}`, formData, {
+          headers,
+        });
       } else {
-        formData.append('organizationId', user.organizationId);
-        await axios.post('http://localhost:5000/api/visitors', formData, { headers });
+        formData.append("organizationId", user.organizationId);
+        await axios.post(`${API_URL}/visitors`, formData, {
+          headers,
+        });
       }
 
       setShowForm(false);
       fetchVisitors();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to save visitor profile.');
+      alert(err.response?.data?.message || "Failed to save visitor profile.");
     }
   };
 
   const handleDeleteVisitor = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this visitor profile?')) return;
+    if (
+      !window.confirm("Are you sure you want to delete this visitor profile?")
+    )
+      return;
     try {
-      const user = JSON.parse(localStorage.getItem('user'));
+      const user = JSON.parse(localStorage.getItem("user"));
       const headers = { Authorization: `Bearer ${user.token}` };
-      await axios.delete(`http://localhost:5000/api/visitors/${id}`, { headers });
+      await axios.delete(`${API_URL}/visitors/${id}`, {
+        headers,
+      });
       fetchVisitors();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete profile.');
+      alert(err.response?.data?.message || "Failed to delete profile.");
     }
   };
 
   const getPhotoUrl = (filename) => {
-    return `http://localhost:5000/uploads/${filename}`;
+    const backendBaseUrl = API_URL.replace("/api", "");
+    return `${backendBaseUrl}/uploads/${filename}`;
   };
 
   return (
-    <div style={{ padding: '40px', maxWidth: '1000px', margin: '0 auto', width: '100%' }} className="animated-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '15px' }}>
+    <div
+      style={{
+        padding: "40px",
+        maxWidth: "1000px",
+        margin: "0 auto",
+        width: "100%",
+      }}
+      className="animated-fade-in"
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "25px",
+          flexWrap: "wrap",
+          gap: "15px",
+        }}
+      >
         <div>
-          <h2 style={{ fontSize: '32px', marginBottom: '4px' }}>Visitor Database</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Create, read, update, and delete visitor profiles.</p>
+          <h2 style={{ fontSize: "32px", marginBottom: "4px" }}>
+            Visitor Database
+          </h2>
+          <p style={{ color: "var(--text-muted)" }}>
+            Create, read, update, and delete visitor profiles.
+          </p>
         </div>
         <button className="btn btn-primary" onClick={handleCreateClick}>
           + New Visitor Profile
@@ -118,7 +150,7 @@ const Visitors = () => {
       </div>
 
       {/* Search Bar & Stats */}
-      <div style={{ display: 'flex', gap: '15px', marginBottom: '25px' }}>
+      <div style={{ display: "flex", gap: "15px", marginBottom: "25px" }}>
         <input
           type="text"
           className="form-control"
@@ -130,28 +162,22 @@ const Visitors = () => {
 
       {/* Form modal backdrop */}
       {showForm && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowForm(false)}
-        >
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="modal-overlay" onClick={() => setShowForm(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2
               style={{
                 marginBottom: "20px",
-                color: "#2563eb"
+                color: "#2563eb",
               }}
             >
-              {editingVisitor ? "Edit Visitor Profile" : "Create Visitor Profile"}
+              {editingVisitor
+                ? "Edit Visitor Profile"
+                : "Create Visitor Profile"}
             </h2>
 
             <form onSubmit={handleSaveVisitor}>
               <div className="input-group">
-                <label className="input-label">
-                  Full Name
-                </label>
+                <label className="input-label">Full Name</label>
                 <input
                   type="text"
                   className="form-control"
@@ -162,9 +188,7 @@ const Visitors = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">
-                  Phone Number
-                </label>
+                <label className="input-label">Phone Number</label>
                 <input
                   type="text"
                   className="form-control"
@@ -175,9 +199,7 @@ const Visitors = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">
-                  Email Address
-                </label>
+                <label className="input-label">Email Address</label>
                 <input
                   type="email"
                   className="form-control"
@@ -188,9 +210,7 @@ const Visitors = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">
-                  Address
-                </label>
+                <label className="input-label">Address</label>
                 <input
                   type="text"
                   className="form-control"
@@ -200,15 +220,11 @@ const Visitors = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">
-                  Profile Photo
-                </label>
+                <label className="input-label">Profile Photo</label>
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) =>
-                    setPhotoFile(e.target.files[0])
-                  }
+                  onChange={(e) => setPhotoFile(e.target.files[0])}
                 />
               </div>
 
@@ -217,7 +233,7 @@ const Visitors = () => {
                   display: "flex",
                   justifyContent: "flex-end",
                   gap: "10px",
-                  marginTop: "20px"
+                  marginTop: "20px",
                 }}
               >
                 <button
@@ -228,10 +244,7 @@ const Visitors = () => {
                   Cancel
                 </button>
 
-                <button
-                  type="submit"
-                  className="btn btn-success"
-                >
+                <button type="submit" className="btn btn-success">
                   Save Profile
                 </button>
               </div>
@@ -244,31 +257,97 @@ const Visitors = () => {
       {loading ? (
         <div>Loading visitor database...</div>
       ) : visitors.length === 0 ? (
-        <div className="glass-panel" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>
+        <div
+          className="glass-panel"
+          style={{
+            padding: "30px",
+            textAlign: "center",
+            color: "var(--text-muted)",
+          }}
+        >
           No visitor records found.
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '25px' }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "25px",
+          }}
+        >
           {visitors.map((v) => (
-            <div key={v._id} className="glass-panel" style={{ padding: '20px', display: 'flex', gap: '15px', alignItems: 'center' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', border: '1px solid var(--panel-border)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.03)' }}>
+            <div
+              key={v._id}
+              className="glass-panel"
+              style={{
+                padding: "20px",
+                display: "flex",
+                gap: "15px",
+                alignItems: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: "64px",
+                  height: "64px",
+                  borderRadius: "50%",
+                  border: "1px solid var(--panel-border)",
+                  overflow: "hidden",
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "rgba(255,255,255,0.03)",
+                }}
+              >
                 {v.photo ? (
-                  <img src={getPhotoUrl(v.photo)} alt="Visitor profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img
+                    src={getPhotoUrl(v.photo)}
+                    alt="Visitor profile"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
                 ) : (
-                  <span style={{ fontSize: '20px' }}>👤</span>
+                  <span style={{ fontSize: "20px" }}>👤</span>
                 )}
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <h4 style={{ fontSize: '16px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{v.name}</h4>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{v.email}</p>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{v.phone}</p>
+                <h4
+                  style={{
+                    fontSize: "16px",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {v.name}
+                </h4>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  {v.email}
+                </p>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  {v.phone}
+                </p>
 
-                <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
-                  <button className="btn btn-secondary" onClick={() => handleEditClick(v)} style={{ padding: '6px 12px', fontSize: '11px' }}>
+                <div
+                  style={{ display: "flex", gap: "10px", marginTop: "12px" }}
+                >
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => handleEditClick(v)}
+                    style={{ padding: "6px 12px", fontSize: "11px" }}
+                  >
                     Edit
                   </button>
-                  <button className="btn btn-danger" onClick={() => handleDeleteVisitor(v._id)} style={{ padding: '6px 12px', fontSize: '11px' }}>
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => handleDeleteVisitor(v._id)}
+                    style={{ padding: "6px 12px", fontSize: "11px" }}
+                  >
                     Delete
                   </button>
                 </div>

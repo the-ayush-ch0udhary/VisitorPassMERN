@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import API_URL from "../config/api";
 
 const RequestAppointment = () => {
   const [email, setEmail] = useState("");
@@ -30,7 +31,7 @@ const RequestAppointment = () => {
   useEffect(() => {
     const fetchOrgs = async () => {
       try {
-        const orgRes = await axios.get("http://localhost:5000/api/orgs");
+        const orgRes = await axios.get(`${API_URL}/orgs`);
         setOrgs(orgRes.data);
         if (orgRes.data.length > 0) {
           setSelectedOrgId(orgRes.data[0]._id);
@@ -53,9 +54,16 @@ const RequestAppointment = () => {
     const fetchHosts = async () => {
       if (!selectedOrgId) return;
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/auth/hosts?organizationId=${selectedOrgId}`,
-        );
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+const res = await axios.get(
+  `${API_URL}/auth/hosts?organizationId=${selectedOrgId}`,
+  {
+    headers: {
+      Authorization: `Bearer ${user.token}`
+    }
+  }
+);
         setHosts(res.data);
         if (res.data.length > 0) {
           setSelectedHostId(res.data[0]._id);
@@ -74,7 +82,7 @@ const RequestAppointment = () => {
     setError("");
     setOtpLoading(true);
     try {
-      await axios.post("http://localhost:5000/api/otp/send", { email });
+      await axios.post(`${API_URL}/otp/send`, { email });
       setOtpSent(true);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to send OTP code.");
@@ -88,7 +96,7 @@ const RequestAppointment = () => {
     setError("");
     setOtpLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/otp/verify", {
+      const res = await axios.post(`${API_URL}/otp/verify`, {
         email,
         otp,
       });
@@ -114,13 +122,34 @@ const RequestAppointment = () => {
       return;
     }
 
+    if (!otpVerified) {
+      setError("Please verify OTP first.");
+      setLoading(false);
+      return;
+    }
+
+    if (new Date(date) <= new Date()) {
+      setError("Please select a future appointment date.");
+      setLoading(false);
+      return;
+    }
+
+    if (phone.trim().length < 10) {
+      setError("Please enter a valid phone number.");
+      setLoading(false);
+      return;
+    }
     try {
-      // 1. Create or verify visitor profile (multipart/form-data for photo upload)
-      const user = JSON.parse(localStorage.getItem("user"));
-      const headers = {
-        Authorization: user ? `Bearer ${user.token}` : "",
-        "Content-Type": "multipart/form-data",
-      };
+      // 1. Create or verify visitor profile
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+      const config = user?.token
+        ? {
+            headers: {
+              Authorization: `Bearer ${user.token}`,
+            },
+          }
+        : {};
 
       const formData = new FormData();
       formData.append("name", name);
@@ -133,15 +162,15 @@ const RequestAppointment = () => {
 
       // Upsert/Create visitor record
       const newProfileRes = await axios.post(
-        "http://localhost:5000/api/visitors",
+        `${API_URL}/visitors`,
         formData,
-        { headers },
+        config,
       );
       const createdVisitorId = newProfileRes.data._id;
 
       // 2. Book appointment
       await axios.post(
-        "http://localhost:5000/api/appointments",
+        `${API_URL}/appointments`,
         {
           visitorId: createdVisitorId,
           hostId: selectedHostId,
@@ -149,11 +178,7 @@ const RequestAppointment = () => {
           date,
           purpose,
         },
-        {
-          headers: {
-            Authorization: user ? `Bearer ${user.token}` : "",
-          },
-        },
+        config,
       );
       setSuccess(
         "Appointment request submitted successfully! Pending host employee approval.",

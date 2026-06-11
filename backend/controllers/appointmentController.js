@@ -6,10 +6,10 @@ const Organization = require('../models/Organization');
 const AuditLog = require('../models/AuditLog');
 const QRCode = require('qrcode');
 const { generatePassPDF } = require('../utils/pdfGenerator');
+const { sendSMS } = require('../utils/smsService');
 const { sendPassEmail, sendApprovalNotice } = require('../utils/emailService');
-const { sendSMS } = require('../utils/smsMock');
 
-// Helper to log audit activities inside the backend
+
 const logActivity = async (userId, action) => {
   try {
     const log = new AuditLog({ userId, action });
@@ -19,10 +19,11 @@ const logActivity = async (userId, action) => {
   }
 };
 
-// Create a new appointment request (Visitor self-registers or host books)
+
+// Create a new appointment request 
 exports.createAppointment = async (req, res) => {
   try {
-    console.log("BODY:", req.body);
+
 
     const { visitorId, hostId, date, purpose, organizationId } = req.body;
 
@@ -32,6 +33,31 @@ exports.createAppointment = async (req, res) => {
         received: req.body
       });
     }
+
+    const visitor = await Visitor.findById(visitorId);
+
+    if (!visitor) {
+      return res.status(404).json({
+        message: "Visitor not found"
+      });
+    }
+
+    const organization = await Organization.findById(organizationId);
+
+    if (!organization) {
+      return res.status(404).json({
+        message: 'Organization not found'
+      });
+    }
+
+    const host = await User.findById(hostId);
+
+    if (!host) {
+      return res.status(404).json({
+        message: 'Host not found'
+      });
+    }
+
     const appointment = new Appointment({
       visitorId,
       hostId,
@@ -43,22 +69,27 @@ exports.createAppointment = async (req, res) => {
 
     await appointment.save();
 
-    // Log this activity
+
     const loggedInUser = req.user ? req.user._id : null;
-    await logActivity(loggedInUser, `Created appointment request for visitor profile ${visitorId}`);
+
+    await logActivity(
+      loggedInUser,
+      `Created appointment request for visitor profile ${visitorId}`
+    );
 
     res.status(201).json(appointment);
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message
+    });
   }
 };
 
-// Retrieve appointments list with role-based restrictions
 exports.getAppointments = async (req, res) => {
   try {
     let query = {};
 
-    // Multi-tenant check: filter by user's organization unless System Admin (who has organizationId = null)
     if (req.user.organizationId) {
       query.organizationId = req.user.organizationId;
     }
@@ -70,14 +101,16 @@ exports.getAppointments = async (req, res) => {
     } else if (req.user.role === 'Visitor') {
 
       // Visitors can only see their own appointments
-      const visitorProfile = await Visitor.findOne({ email: req.user.email });
-
+      const visitorProfile = await Visitor.findOne({
+        email: req.user.email,
+        organizationId: req.user.organizationId
+      });
       if (visitorProfile) {
         query.visitorId = visitorProfile._id;
 
       } else {
 
-        return res.json([]); // Return empty if no visitor profile exists yet
+        return res.json([]);
       }
     }
 
@@ -97,7 +130,13 @@ exports.getAppointments = async (req, res) => {
 // Host action: Approve Appointment & Generate Digital Pass
 exports.approveAppointment = async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id);
+    const query = { _id: req.params.id };
+
+    if (req.user.organizationId) {
+      query.organizationId = req.user.organizationId;
+    }
+
+    const appointment = await Appointment.findOne(query);
     if (!appointment) {
       return res.status(404).json({ message: 'Appointment not found' });
     }
@@ -107,10 +146,15 @@ exports.approveAppointment = async (req, res) => {
       return res.status(403).json({ message: 'Forbidden: You are not the host for this appointment' });
     }
 
+    if (appointment.status === 'Approved') {
+      return res.status(400).json({
+        message: 'Appointment already approved'
+      });
+    }
     appointment.status = 'Approved';
     await appointment.save();
 
-    // Fetch related details to build the pass
+
     const visitor = await Visitor.findById(appointment.visitorId);
     const host = await User.findById(appointment.hostId);
     const organization = await Organization.findById(appointment.organizationId);
@@ -145,7 +189,7 @@ exports.approveAppointment = async (req, res) => {
       expiryDate
     };
 
-    console.log("Visitor Email:", visitor.email);
+
 
     const pdfFilename = await generatePassPDF(
       tempPass,
@@ -154,7 +198,7 @@ exports.approveAppointment = async (req, res) => {
       organization
     );
 
-    console.log("PDF FILE:", pdfFilename);
+
 
     // Update pass with actual values
     pass.qrCode = qrCodeDataUrl;
@@ -162,12 +206,18 @@ exports.approveAppointment = async (req, res) => {
 
     await pass.save();
 
-    console.log("PASS SAVED");
-    // 5. Send notifications (Email with attachment & mock SMS)
-    await sendPassEmail(visitor.email, visitor.name, pdfFilename);
-    await sendSMS(visitor.phone, `Hello ${visitor.name}, your visit to ${organization.name} is approved. Your digital pass has been emailed to you.`);
 
-    // 6. Write Audit Log
+    //Send notifications 
+    await sendPassEmail(visitor.email, visitor.name, pdfFilename);
+    try {
+      await sendSMS(
+        visitor.phone,
+        `Hello ${visitor.name}, your visit to ${organization.name} is approved. Your digital pass has been emailed to you.`
+      );
+    } catch (err) {
+      console.error("SMS failed:", err.message);
+    }
+
     await logActivity(req.user._id, `Approved appointment ${appointment._id} and generated digital pass ${pass._id}`);
 
     res.json({ message: 'Appointment approved and pass generated successfully', appointment, pass });
@@ -176,10 +226,16 @@ exports.approveAppointment = async (req, res) => {
   }
 };
 
-// Host action: Reject Appointment
+// Reject Appointment
 exports.rejectAppointment = async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id);
+    const query = { _id: req.params.id };
+
+    if (req.user.organizationId) {
+      query.organizationId = req.user.organizationId;
+    }
+
+    const appointment = await Appointment.findOne(query);
     if (!appointment) {
       return res.status(404).json({ message: 'Appointment not found' });
     }
@@ -189,13 +245,27 @@ exports.rejectAppointment = async (req, res) => {
       return res.status(403).json({ message: 'Forbidden: You are not the host for this appointment' });
     }
 
+
+    if (appointment.status === 'Rejected') {
+      return res.status(400).json({
+        message: 'Appointment already rejected'
+      });
+    }
     appointment.status = 'Rejected';
     await appointment.save();
 
     // Notify Visitor
     const visitor = await Visitor.findById(appointment.visitorId);
     await sendApprovalNotice(visitor.email, visitor.name, 'Rejected');
-    await sendSMS(visitor.phone, `Hello ${visitor.name}, unfortunately your appointment request has been rejected.`);
+
+    try {
+      await sendSMS(
+        visitor.phone,
+        `Hello ${visitor.name}, unfortunately your appointment request has been rejected.`
+      );
+    } catch (err) {
+      console.error("SMS failed:", err.message);
+    }
 
     // Write Audit Log
     await logActivity(req.user._id, `Rejected appointment ${appointment._id}`);
@@ -205,3 +275,5 @@ exports.rejectAppointment = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
