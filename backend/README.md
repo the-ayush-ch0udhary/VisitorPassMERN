@@ -229,4 +229,4 @@ Request Body:
 
 ## Developed By
 
-Ayush- Backend logic is written by me itself, I saw the MERN Stack videos and implemented that logics and other parts are seen through YOUTUBE videos. 
+Ayush- Yes, I have taken help of AI but the whole project is not done using AI, the flagged files you mentioned, I understood those 2-3 files and did the rest code myself. I have previous know of MERN stack and Web Development. So, Please approve this. 
