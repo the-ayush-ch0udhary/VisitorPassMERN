@@ -1,6 +1,7 @@
 const Visitor = require('../models/Visitor');
 const Pass = require('../models/Pass');
 const CheckLog = require('../models/CheckLog');
+const Appointment = require('../models/Appointment');
 
 exports.getStats = async (req, res) => {
   try {
@@ -60,12 +61,30 @@ exports.getStats = async (req, res) => {
       }
     });
 
+    const approvedAppointments =
+      await Appointment.countDocuments({
+        status: 'Approved'
+      });
+
+    const rejectedAppointments =
+      await Appointment.countDocuments({
+        status: 'Rejected'
+      });
+
+    const pendingAppointments =
+      await Appointment.countDocuments({
+        status: 'Pending'
+      });
+
     res.json({
       totalVisitors,
       totalPasses,
       activeVisitors,
       todayCheckIns,
-      todayCheckOuts
+      todayCheckOuts,
+      approvedAppointments,
+      rejectedAppointments,
+      pendingAppointments
     });
 
   } catch (error) {
@@ -74,7 +93,6 @@ exports.getStats = async (req, res) => {
     });
   }
 };
-
 exports.getTrends = async (req, res) => {
   try {
     const orgId = req.user.organizationId;

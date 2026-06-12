@@ -17,6 +17,11 @@ exports.register = async (req, res) => {
   try {
     const { name, email, password, role, organizationId } = req.body;
 
+    if (password.length < 6) {
+      return res.status(400).json({
+        message: 'Password must be at least 6 characters'
+      });
+    }
     // Validation
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -125,23 +130,6 @@ exports.getMe = async (req, res) => {
 exports.getHosts = async (req, res) => {
   try {
     const { organizationId } = req.query;
-
-    if (!organizationId) {
-      return res.status(400).json({
-        message: 'organizationId query parameter is required'
-      });
-    }
-
-    // Preventing organization users from viewing hosts of other organizations
-    if (
-      req.user &&
-      req.user.organizationId &&
-      String(req.user.organizationId) !== String(organizationId)
-    ) {
-      return res.status(403).json({
-        message: 'Access denied'
-      });
-    }
 
     const hosts = await User.find({
       organizationId,

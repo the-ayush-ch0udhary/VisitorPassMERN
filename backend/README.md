@@ -153,6 +153,49 @@ http://localhost:5000
 ```
 
 ---
+## API Endpoints
+
+### Authentication
+METHOD      Endpoint
+POST -      /api/auth/register
+POST -      /api/auth/login
+GET -       /api/auth/hosts
+GET -       /api/auth/hosts
+
+### Visitor Management
+METHOD      Endpoint
+GET -       /api/visitors
+POST -      /api/visitors
+PUT -       /api/visitors/
+DELETE -    /api/visitors/
+
+### Appointment Management
+METHOD      Endpoint
+GET -       /api/appointments
+POST -      /api/appointments
+PUT -       /api/appointments//approve
+PUT -       /api/appointments//reject
+
+### Pass Management
+METHOD      Endpoint
+GET -      /api/passes
+GET -      /api/passes/
+
+### Check-In / Check-Out
+METHOD      Endpoint
+POST -      /api/checklogs/checkin
+POST -      /api/checklogs/checkout
+GET -       /api/checklogs
+
+### Analytics
+METHOD      Endpoint
+GET -      /api/auth/stats
+GET -      /api/analytics/trends
+
+### OTP Verification
+METHOD      Endpoint
+POST -      /api/otp/send
+POST -      /api/otp/verify
 
 ## Example Seed Data
 
@@ -226,6 +269,7 @@ Request Body:
 
 ---
 `SMS notification integration has been implemented using Twilio Trial Account`
+`Due to Twilio trial restrictions, SMS messages can only be sent to verified phone numbers. A paid Twilio account is required for unrestricted production use.`
 
 ## Developed By
 

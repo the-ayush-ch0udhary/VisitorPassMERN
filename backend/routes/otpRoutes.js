@@ -6,10 +6,10 @@ const {
     verifyOTP
 } = require('../controllers/otpController');
 
-// Send OTP
-router.post('/send', sendOTP);
+const otpLimiter = require('../middleware/rateLimit');
 
-// Verify OTP
-router.post('/verify', verifyOTP);
+router.post('/send', otpLimiter, sendOTP);
+
+router.post('/verify', otpLimiter, verifyOTP);
 
 module.exports = router;
