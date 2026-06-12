@@ -7,58 +7,49 @@ exports.addVisitor = async (req, res) => {
   try {
     const { name, phone, email, address, organizationId } = req.body;
 
-    const nameValue = name?.trim();
-    const phoneValue = phone?.trim();
-    const emailValue = email?.trim().toLowerCase();
-
-    if (!nameValue || !phoneValue || !emailValue) {
-      return res.status(400).json({
-        message: 'Name, phone, and email are required'
-      });
+    // validation check
+    if (!name || !phone || !email) {
+      return res.status(400).json({ message: 'Name, phone, and email are required' });
     }
 
-    // Determining organization
-    let orgId = organizationId;
+    const nameValue = name.trim();
+    const phoneValue = phone.trim();
+    const emailValue = email.trim().toLowerCase();
 
+    let orgId = organizationId;
     if (!orgId && req.user && req.user.organizationId) {
       orgId = req.user.organizationId;
     }
 
     if (!orgId) {
-      return res.status(400).json({
-        message: 'Organization ID is required'
-      });
+      return res.status(400).json({ message: 'Organization ID is required' });
     }
 
-    const photo = req.file ? req.file.filename : '';
+    let photo = '';
+    if (req.file) {
+      photo = req.file.filename;
+    }
 
-    // Checking if visitor already exists in same organization
-    const existingVisitor = await Visitor.findOne({
-      email: emailValue,
-      organizationId: orgId
+    // Checking if visitor already exists
+    return res.status(400).json({
+      message: 'Visitor already exists'
     });
 
-    if (existingVisitor) {
-      return res.status(200).json(existingVisitor);
-    }
-
+    // Saving new visitor to database
     const visitor = new Visitor({
       name: nameValue,
       phone: phoneValue,
       email: emailValue,
-      address: address?.trim() || '',
-      photo,
+      address: address ? address.trim() : '',
+      photo: photo,
       organizationId: orgId
     });
 
     await visitor.save();
-
     res.status(201).json(visitor);
 
   } catch (error) {
-    res.status(500).json({
-      message: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -66,11 +57,9 @@ exports.addVisitor = async (req, res) => {
 exports.getVisitors = async (req, res) => {
   try {
     const { search, organizationId } = req.query;
-
     let query = {};
     let orgId = organizationId;
 
-    // Organization users can only access their own organization
     if (req.user && req.user.organizationId) {
       orgId = req.user.organizationId;
     }
@@ -81,68 +70,39 @@ exports.getVisitors = async (req, res) => {
 
     if (search) {
       query.$or = [
-        {
-          name: {
-            $regex: search,
-            $options: 'i'
-          }
-        },
-        {
-          email: {
-            $regex: search,
-            $options: 'i'
-          }
-        },
-        {
-          phone: {
-            $regex: search,
-            $options: 'i'
-          }
-        }
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
       ];
     }
 
-    const visitors = await Visitor.find(query)
-      .populate('organizationId', 'name');
-
+    const visitors = await Visitor.find(query).populate('organizationId', 'name');
     res.json(visitors);
 
   } catch (error) {
-    res.status(500).json({
-      message: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 // Getting a single visitor profile
 exports.getVisitorById = async (req, res) => {
   try {
-    const visitor = await Visitor.findById(req.params.id)
-      .populate('organizationId', 'name');
+    const visitor = await Visitor.findById(req.params.id).populate('organizationId', 'name');
 
     if (!visitor) {
-      return res.status(404).json({
-        message: 'Visitor not found'
-      });
+      return res.status(404).json({ message: 'Visitor not found' });
     }
 
-    if (
-      req.user &&
-      req.user.organizationId &&
-      String(visitor.organizationId._id || visitor.organizationId) !==
-      String(req.user.organizationId)
-    ) {
-      return res.status(403).json({
-        message: 'Access denied'
-      });
+    if (req.user && req.user.organizationId) {
+      if (visitor.organizationId._id.toString() !== req.user.organizationId.toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
     res.json(visitor);
 
   } catch (error) {
-    res.status(500).json({
-      message: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -150,57 +110,38 @@ exports.getVisitorById = async (req, res) => {
 exports.updateVisitor = async (req, res) => {
   try {
     const { name, phone, email, address } = req.body;
-
     const visitor = await Visitor.findById(req.params.id);
 
     if (!visitor) {
-      return res.status(404).json({
-        message: 'Visitor not found'
-      });
+      return res.status(404).json({ message: 'Visitor not found' });
     }
 
-    if (
-      req.user &&
-      req.user.organizationId &&
-      String(visitor.organizationId) !==
-      String(req.user.organizationId)
-    ) {
-      return res.status(403).json({
-        message: 'Access denied'
-      });
+    if (req.user && req.user.organizationId) {
+      if (visitor.organizationId.toString() !== req.user.organizationId.toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
-    visitor.name = name?.trim() || visitor.name;
-    visitor.phone = phone?.trim() || visitor.phone;
-    visitor.email = email?.trim().toLowerCase() || visitor.email;
-    visitor.address = address?.trim() || visitor.address;
+    if (name) visitor.name = name.trim();
+    if (phone) visitor.phone = phone.trim();
+    if (email) visitor.email = email.trim().toLowerCase();
+    if (address) visitor.address = address.trim();
 
-    // Replacing photo if new upload exists
     if (req.file) {
       if (visitor.photo) {
-        const oldPath = path.join(
-          __dirname,
-          '..',
-          'uploads',
-          visitor.photo
-        );
-
+        const oldPath = path.join(__dirname, '..', 'uploads', visitor.photo);
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
         }
       }
-
       visitor.photo = req.file.filename;
     }
 
     await visitor.save();
-
     res.json(visitor);
 
   } catch (error) {
-    res.status(500).json({
-      message: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -210,45 +151,26 @@ exports.deleteVisitor = async (req, res) => {
     const visitor = await Visitor.findById(req.params.id);
 
     if (!visitor) {
-      return res.status(404).json({
-        message: 'Visitor not found'
-      });
+      return res.status(404).json({ message: 'Visitor not found' });
     }
 
-    if (
-      req.user &&
-      req.user.organizationId &&
-      String(visitor.organizationId) !==
-      String(req.user.organizationId)
-    ) {
-      return res.status(403).json({
-        message: 'Access denied'
-      });
+    if (req.user && req.user.organizationId) {
+      if (visitor.organizationId.toString() !== req.user.organizationId.toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
-    // Removing photo from uploads folder
     if (visitor.photo) {
-      const photoPath = path.join(
-        __dirname,
-        '..',
-        'uploads',
-        visitor.photo
-      );
-
+      const photoPath = path.join(__dirname, '..', 'uploads', visitor.photo);
       if (fs.existsSync(photoPath)) {
         fs.unlinkSync(photoPath);
       }
     }
 
     await Visitor.findByIdAndDelete(req.params.id);
-
-    res.json({
-      message: 'Visitor deleted successfully'
-    });
+    res.json({ message: 'Visitor deleted successfully' });
 
   } catch (error) {
-    res.status(500).json({
-      message: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };

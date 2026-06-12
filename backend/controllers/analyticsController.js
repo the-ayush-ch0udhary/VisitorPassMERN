@@ -3,6 +3,7 @@ const Pass = require('../models/Pass');
 const CheckLog = require('../models/CheckLog');
 const Appointment = require('../models/Appointment');
 
+// Total numbers for the dashboard stats
 exports.getStats = async (req, res) => {
   try {
     const orgId = req.user.organizationId;
@@ -11,70 +12,58 @@ exports.getStats = async (req, res) => {
     let passQuery = {};
     let logQuery = {};
 
+    
     if (orgId) {
       visitorQuery.organizationId = orgId;
 
-      const visitors = await Visitor.find({
-        organizationId: orgId
-      });
+      const visitors = await Visitor.find({ organizationId: orgId });
+      
+      
+      let visitorIds = [];
+      for (let i = 0; i < visitors.length; i++) {
+        visitorIds.push(visitors[i]._id);
+      }
 
-      const visitorIds = visitors.map(visitor => visitor._id);
-
-      passQuery.visitorId = {
-        $in: visitorIds
-      };
-
-      logQuery.visitorId = {
-        $in: visitorIds
-      };
+      passQuery.visitorId = { $in: visitorIds };
+      logQuery.visitorId = { $in: visitorIds };
     }
 
+    
     const totalVisitors = await Visitor.countDocuments(visitorQuery);
-
     const totalPasses = await Pass.countDocuments(passQuery);
 
-    const activeVisitors = await CheckLog.countDocuments({
-      ...logQuery,
-      checkInTime: { $ne: null },
-      checkOutTime: null
-    });
+    // active visitors right now
+    let activeQuery = { checkInTime: { $ne: null }, checkOutTime: null };
+    if (orgId) {
+      activeQuery.visitorId = logQuery.visitorId;
+    }
+    const activeVisitors = await CheckLog.countDocuments(activeQuery);
 
+    // Setup dates
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
     const endOfToday = new Date();
     endOfToday.setHours(23, 59, 59, 999);
 
-    const todayCheckIns = await CheckLog.countDocuments({
-      ...logQuery,
-      checkInTime: {
-        $gte: startOfToday,
-        $lte: endOfToday
-      }
-    });
+    // Counts check-ins today
+    let checkInQuery = { checkInTime: { $gte: startOfToday, $lte: endOfToday } };
+    if (orgId) {
+      checkInQuery.visitorId = logQuery.visitorId;
+    }
+    const todayCheckIns = await CheckLog.countDocuments(checkInQuery);
 
-    const todayCheckOuts = await CheckLog.countDocuments({
-      ...logQuery,
-      checkOutTime: {
-        $gte: startOfToday,
-        $lte: endOfToday
-      }
-    });
+    // Counts check-outs today
+    let checkOutQuery = { checkOutTime: { $gte: startOfToday, $lte: endOfToday } };
+    if (orgId) {
+      checkOutQuery.visitorId = logQuery.visitorId;
+    }
+    const todayCheckOuts = await CheckLog.countDocuments(checkOutQuery);
 
-    const approvedAppointments =
-      await Appointment.countDocuments({
-        status: 'Approved'
-      });
-
-    const rejectedAppointments =
-      await Appointment.countDocuments({
-        status: 'Rejected'
-      });
-
-    const pendingAppointments =
-      await Appointment.countDocuments({
-        status: 'Pending'
-      });
+    // Counts appointment types
+    const approvedAppointments = await Appointment.countDocuments({ status: 'Approved' });
+    const rejectedAppointments = await Appointment.countDocuments({ status: 'Rejected' });
+    const pendingAppointments = await Appointment.countDocuments({ status: 'Pending' });
 
     res.json({
       totalVisitors,
@@ -88,27 +77,25 @@ exports.getStats = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({
-      message: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
+
+//visitor entry charts for past 7 days
 exports.getTrends = async (req, res) => {
   try {
     const orgId = req.user.organizationId;
-
     let logQuery = {};
 
     if (orgId) {
-      const visitors = await Visitor.find({
-        organizationId: orgId
-      });
+      const visitors = await Visitor.find({ organizationId: orgId });
+      
+      let visitorIds = [];
+      for (let i = 0; i < visitors.length; i++) {
+        visitorIds.push(visitors[i]._id);
+      }
 
-      const visitorIds = visitors.map(visitor => visitor._id);
-
-      logQuery.visitorId = {
-        $in: visitorIds
-      };
+      logQuery.visitorId = { $in: visitorIds };
     }
 
     const trends = [];
@@ -123,25 +110,23 @@ exports.getTrends = async (req, res) => {
       const endOfDay = new Date(day);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const count = await CheckLog.countDocuments({
-        ...logQuery,
-        checkInTime: {
-          $gte: startOfDay,
-          $lte: endOfDay
-        }
-      });
+      
+      let dailyQuery = { checkInTime: { $gte: startOfDay, $lte: endOfDay } };
+      if (orgId) {
+        dailyQuery.visitorId = logQuery.visitorId;
+      }
+
+      const count = await CheckLog.countDocuments(dailyQuery);
 
       trends.push({
         label: day.toLocaleDateString(),
-        count
+        count: count
       });
     }
 
     res.json(trends);
 
   } catch (error) {
-    res.status(500).json({
-      message: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };

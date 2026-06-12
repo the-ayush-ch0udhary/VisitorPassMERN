@@ -1,110 +1,95 @@
-# Visitor Pass Management System Frontend
+# Visitor Pass Management System - Frontend
 
-## About
+## About the Project
 
-This is the frontend of the Visitor Pass Management System developed using React.js and Vite.
+This is the frontend of my Visitor Pass Management System project built using **React.js** and **Vite**.
 
-The frontend provides:
+The frontend provides different dashboards and interfaces for Admin, Security, Host, and Visitor users. It allows users to manage visitors, appointments, passes, and check-in/check-out activities through a simple web interface.
 
-1. User Login and Registration
-2. Role Based Dashboard
-3. Visitor Management
-4. Appointment Management
-5. Pass Management
-6. Check-In / Check-Out Interface
-7. Reports and Analytics
-8. Responsive User Interface
+---
+
+## Features
+
+* User Login and Registration
+* Role-Based Dashboards
+* Visitor Management
+* Appointment Management
+* Pass Management
+* QR Code Display
+* Check-In / Check-Out System
+* Reports and Analytics
+* Responsive User Interface
+* Multi-Organization Support
 
 ---
 
 ## Technologies Used
 
-1. React.js
-2. Vite
-3. React Router DOM
-4. Axios
-5. JavaScript
-6. CSS
+* React.js
+* Vite
+* React Router DOM
+* Axios
+* JavaScript
+* CSS
 
 ---
 
-## Install Required Packages
+## Installation
 
-Install all packages:
+Install all required packages:
 
 ```bash
 npm install
 ```
 
-Or install packages individually:
-
-1. React
+Or install packages manually:
 
 ```bash
 npm install react react-dom
-```
-
-2. React Router DOM
-
-```bash
 npm install react-router-dom
-```
-
-3. Axios
-
-```bash
 npm install axios
-```
-
-4. Vite
-
-```bash
 npm install vite --save-dev
-```
-
-5. ESLint
-
-```bash
 npm install eslint --save-dev
 ```
 
 ---
 
-## Create an .env File
+## Environment Variables
 
-Create a file named `.env` inside the frontend folder and add:
+Create a `.env` file inside the frontend folder:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
-Change the URL according to your backend server.
+Update the URL if your backend is running on a different port or server.
 
 ---
 
-## Run the Project
+## Running the Project
 
-Development Mode:
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-The application will run on:
+The frontend will run on:
 
 ```text
 http://localhost:5173
 ```
 
+---
 
-## Features
+## Functional Modules
 
 ### Authentication
 
-* User Login
 * User Registration
+* User Login
 * JWT Token Storage
-* Role Based Access
+* Role-Based Access
 
 ### Visitor Management
 
@@ -115,17 +100,17 @@ http://localhost:5173
 
 ### Appointment Management
 
-* Create Appointment
-* Approve Appointment
-* Reject Appointment
+* Create Appointment Requests
+* Approve Appointments
+* Reject Appointments
 * View Appointment Status
 
 ### Pass Management
 
-* Generate Visitor Pass
+* Generate Visitor Passes
 * View Pass Details
-* Download PDF Pass
-* QR Code Display
+* Download PDF Passes
+* Display QR Codes
 
 ### Check-In / Check-Out
 
@@ -133,39 +118,57 @@ http://localhost:5173
 * Visitor Exit Tracking
 * Visit History
 
-### Dashboard
+### Analytics Dashboard
 
 * Total Visitors
-* Total Appointments
-* Active Passes
-* Check-In / Check-Out Statistics
+* Total Passes
+* Active Visitors
+* Today's Check-Ins
+* Today's Check-Outs
+* Appointment Statistics
+* Weekly Visitor Trends
+
+---
+
+## QR Code Support
+
+The Security Dashboard supports:
+
+* Manual Pass ID Entry
+* QR Code Scanning
+
+Visitors can be checked in and checked out using either method.
 
 ---
 
 ## Connecting Frontend with Backend
 
-Make sure the backend server is running on:
+Make sure the backend server is running:
 
 ```text
 http://localhost:5000
 ```
 
-and the frontend `.env` file contains:
+and your frontend `.env` file contains:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
 ---
-QR code scanning is now implemented on frontend; 
-SecurityDashboard can accepts manual Pass ID input as well as actual QR scanner integration
-Seed/demo data script not provided as executable file check backend seed.js
-Multi-organization support mentioned in code but not fully tested or demonstrated in screenshots because this part is bonus so tried it.
-No idea of how to deploy on Docker
-OTP verification implemented as a learning basic
----
+
+## Project Notes
+
+* SMS notifications are implemented using a Twilio Trial Account.
+* OTP verification is implemented as a basic learning feature.
+* Multi-organization support has been implemented and tested with multiple organizations.
+* Database seed data is available in the backend project through the `seed.js` file.
+* Docker deployment has not been implemented in this project.
 
 ---
+
 ## Developed By
 
 Ayush
+
+Student Project - Visitor Pass Management System
