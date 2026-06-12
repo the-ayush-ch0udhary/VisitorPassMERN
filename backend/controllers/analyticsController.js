@@ -2,56 +2,62 @@ const Visitor = require('../models/Visitor');
 const Pass = require('../models/Pass');
 const CheckLog = require('../models/CheckLog');
 
-
 exports.getStats = async (req, res) => {
   try {
     const orgId = req.user.organizationId;
-    let visitorFilter = {};
-    let passFilter = {};
-    let logFilter = {};
 
-    
+    let visitorQuery = {};
+    let passQuery = {};
+    let logQuery = {};
+
     if (orgId) {
-      visitorFilter.organizationId = orgId;
+      visitorQuery.organizationId = orgId;
 
-      
-      const orgVisitors = await Visitor.find({ organizationId: orgId }).select('_id');
-      const orgVisitorIds = orgVisitors.map(v => v._id);
+      const visitors = await Visitor.find({
+        organizationId: orgId
+      });
 
-      passFilter.visitorId = { $in: orgVisitorIds };
-      logFilter.visitorId = { $in: orgVisitorIds };
+      const visitorIds = visitors.map(visitor => visitor._id);
+
+      passQuery.visitorId = {
+        $in: visitorIds
+      };
+
+      logQuery.visitorId = {
+        $in: visitorIds
+      };
     }
 
-    // 1. Total Visitors
-    const totalVisitors = await Visitor.countDocuments(visitorFilter);
+    const totalVisitors = await Visitor.countDocuments(visitorQuery);
 
-    // 2. Total Passes
-    const totalPasses = await Pass.countDocuments(passFilter);
+    const totalPasses = await Pass.countDocuments(passQuery);
 
-    // 3. Active Visitors (
     const activeVisitors = await CheckLog.countDocuments({
-      ...logFilter,
+      ...logQuery,
       checkInTime: { $ne: null },
       checkOutTime: null
     });
 
-    // Today's boundaries
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
     const endOfToday = new Date();
     endOfToday.setHours(23, 59, 59, 999);
 
-    // 4. Today's Check-ins
     const todayCheckIns = await CheckLog.countDocuments({
-      ...logFilter,
-      checkInTime: { $gte: startOfToday, $lte: endOfToday }
+      ...logQuery,
+      checkInTime: {
+        $gte: startOfToday,
+        $lte: endOfToday
+      }
     });
 
-    // 5. Today's Check-outs
     const todayCheckOuts = await CheckLog.countDocuments({
-      ...logFilter,
-      checkOutTime: { $gte: startOfToday, $lte: endOfToday }
+      ...logQuery,
+      checkOutTime: {
+        $gte: startOfToday,
+        $lte: endOfToday
+      }
     });
 
     res.json({
@@ -61,47 +67,63 @@ exports.getStats = async (req, res) => {
       todayCheckIns,
       todayCheckOuts
     });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message
+    });
   }
 };
-
 
 exports.getTrends = async (req, res) => {
   try {
     const orgId = req.user.organizationId;
-    let logFilter = {};
+
+    let logQuery = {};
 
     if (orgId) {
-      const orgVisitors = await Visitor.find({ organizationId: orgId }).select('_id');
-      const orgVisitorIds = orgVisitors.map(v => v._id);
-      logFilter.visitorId = { $in: orgVisitorIds };
+      const visitors = await Visitor.find({
+        organizationId: orgId
+      });
+
+      const visitorIds = visitors.map(visitor => visitor._id);
+
+      logQuery.visitorId = {
+        $in: visitorIds
+      };
     }
 
-    
     const trends = [];
+
     for (let i = 6; i >= 0; i--) {
       const day = new Date();
       day.setDate(day.getDate() - i);
-      
+
       const startOfDay = new Date(day);
       startOfDay.setHours(0, 0, 0, 0);
 
       const endOfDay = new Date(day);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const label = day.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-
       const count = await CheckLog.countDocuments({
-        ...logFilter,
-        checkInTime: { $gte: startOfDay, $lte: endOfDay }
+        ...logQuery,
+        checkInTime: {
+          $gte: startOfDay,
+          $lte: endOfDay
+        }
       });
 
-      trends.push({ label, count });
+      trends.push({
+        label: day.toLocaleDateString(),
+        count
+      });
     }
 
     res.json(trends);
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message
+    });
   }
 };

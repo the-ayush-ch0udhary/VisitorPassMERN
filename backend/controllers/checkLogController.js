@@ -3,24 +3,13 @@ const Pass = require('../models/Pass');
 const Visitor = require('../models/Visitor');
 const AuditLog = require('../models/AuditLog');
 
-// Helper to log audit activities inside the backend
-const logActivity = async (userId, action) => {
-  try {
-    const log = new AuditLog({ userId, action });
-    await log.save();
-  } catch (error) {
-    console.error(`Audit logging failed: ${error.message}`);
-  }
-};
-
-// Check-in a visitor
 exports.checkIn = async (req, res) => {
   try {
     const { passId } = req.body;
 
     if (!passId) {
       return res.status(400).json({
-        message: 'Pass ID is required for check-in'
+        message: 'Pass ID required'
       });
     }
 
@@ -28,13 +17,13 @@ exports.checkIn = async (req, res) => {
 
     if (!pass) {
       return res.status(404).json({
-        message: 'Invalid Pass: Pass not found'
+        message: 'Pass not found'
       });
     }
 
     if (new Date() > new Date(pass.expiryDate)) {
       return res.status(400).json({
-        message: 'Access Denied: This pass has expired'
+        message: 'Pass expired'
       });
     }
 
@@ -45,7 +34,7 @@ exports.checkIn = async (req, res) => {
 
     if (existingLog) {
       return res.status(400).json({
-        message: 'Conflict: Visitor is already checked in'
+        message: 'Already checked in'
       });
     }
 
@@ -57,15 +46,12 @@ exports.checkIn = async (req, res) => {
 
     await log.save();
 
-    await logActivity(
-      req.user._id,
-      `Checked-in visitor ${pass.visitorId.name} with pass ${pass._id}`
-    );
-
-    res.status(201).json({
-      message: 'Check-in registered successfully',
-      log
+    await AuditLog.create({
+      userId: req.user._id,
+      action: 'Check In'
     });
+
+    res.status(201).json(log);
 
   } catch (error) {
     res.status(500).json({
@@ -74,14 +60,13 @@ exports.checkIn = async (req, res) => {
   }
 };
 
-// Check-out a visitor
 exports.checkOut = async (req, res) => {
   try {
     const { passId } = req.body;
 
     if (!passId) {
       return res.status(400).json({
-        message: 'Pass ID is required for check-out'
+        message: 'Pass ID required'
       });
     }
 
@@ -89,7 +74,7 @@ exports.checkOut = async (req, res) => {
 
     if (!pass) {
       return res.status(404).json({
-        message: 'Invalid Pass: Pass not found'
+        message: 'Pass not found'
       });
     }
 
@@ -100,22 +85,20 @@ exports.checkOut = async (req, res) => {
 
     if (!log) {
       return res.status(400).json({
-        message: 'Error: No active check-in record found for this pass'
+        message: 'No check-in found'
       });
     }
 
     log.checkOutTime = new Date();
+
     await log.save();
 
-    await logActivity(
-      req.user._id,
-      `Checked-out visitor ${pass.visitorId.name} with pass ${pass._id}`
-    );
-
-    res.json({
-      message: 'Check-out registered successfully',
-      log
+    await AuditLog.create({
+      userId: req.user._id,
+      action: 'Check Out'
     });
+
+    res.json(log);
 
   } catch (error) {
     res.status(500).json({
@@ -124,34 +107,25 @@ exports.checkOut = async (req, res) => {
   }
 };
 
-// Retrieve all check logs (filter by organization)
 exports.getCheckLogs = async (req, res) => {
   try {
     let filter = {};
 
-    // Multi-tenant filtering
     if (req.user.organizationId) {
       const visitors = await Visitor.find({
         organizationId: req.user.organizationId
-      }).select('_id');
+      });
+
+      const visitorIds = visitors.map(visitor => visitor._id);
 
       filter.visitorId = {
-        $in: visitors.map(visitor => visitor._id)
+        $in: visitorIds
       };
     }
 
     const logs = await CheckLog.find(filter)
       .populate('visitorId')
-      .populate({
-        path: 'passId',
-        populate: {
-          path: 'appointmentId',
-          populate: {
-            path: 'hostId',
-            select: 'name email'
-          }
-        }
-      })
+      .populate('passId')
       .sort({ createdAt: -1 });
 
     res.json(logs);
